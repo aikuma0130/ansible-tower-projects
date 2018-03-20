@@ -1,0 +1,24 @@
+- name: Create User for MariaDB Server
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+
+  tasks:
+    - name: Check variables
+      fail:
+      when:
+        - db_user_name is defined
+        - db_user_password is defined
+        - db_user_priv is defined
+        - db_user_host is defined
+
+    - name: Create user
+      mysql_user:
+        name: "{{ db_user_name }}"
+        password: "{{ db_user_password }}"
+        priv: "{{ db_user_priv }}"
+        host: "{{ db_user_host }}"
+        state: present

@@ -1,0 +1,17 @@
+- name: Configure PHP
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+
+  tasks:
+    - name: Configure php
+      copy:
+        src: php.ini
+        dest: /etc/php.ini
+        owner: root
+        group: root
+        mode: 0644
+      when: ansible_os_family == "RedHat"

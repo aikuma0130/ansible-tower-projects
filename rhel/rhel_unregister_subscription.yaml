@@ -1,0 +1,15 @@
+- name: Unregister RHEL Subscription
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+
+  tasks:
+    - name: Ensure that subscription is unregistered
+      redhat_subscription:
+        state: absent
+        username: "{{ rhel_subscription_username }}"
+        password: "{{ rhel_subscription_password }}"
+        autosubscribe: true

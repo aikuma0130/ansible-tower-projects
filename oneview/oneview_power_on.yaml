@@ -1,0 +1,30 @@
+- name: Power On Server on Synergy
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  environment:
+
+  vars:
+    oneview_config: "/usr/local/etc/oneview/oneview_config.json"
+    ansible_python_interpreter: "/usr/local/bin/python"
+    synergy_hardware_name: "SynergyFrame01, bay 4"
+
+  tasks:
+    - name: Power-On the server
+      oneview_server_hardware:
+        config: "{{ oneview_config }}"
+        state: power_state_set
+        data:
+          name : "{{ synergy_hardware_name }}"
+          powerStateData:
+            powerState: "On"
+            powerControl: "MomentaryPress"
+
+    - name: Wait for server booting up
+      wait_for:
+        host: "{{ ip_address_of_deployed_server }}"
+        port: 22
+        delay: 0
+        timeout: 900
+        state: started

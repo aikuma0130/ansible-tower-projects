@@ -1,0 +1,54 @@
+- name: Configure RHEL Basic Settings
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+
+  tasks:
+    - name: Ensure that timezone is Asia/Tokyo
+      timezone:
+        name: Asia/Tokyo
+    
+    - name: Ensure that firewalld is disabled
+      service:
+        name: firewalld
+        state: stopped
+        enabled: no
+    
+    - name: Ensure that selinux is disabled
+      lineinfile:
+        path: /etc/selinux/config
+        regexp: '^SELINUX='
+        line: 'SELINUX=disabled'
+      register: disable_selinux
+    
+    - name: Reboot after disable selinux
+      command: /sbin/shutdown -r +1
+      async: 0
+      poll: 0
+      ignore_errors: true
+      when: disable_selinux | changed
+
+    - name: Waiting for server down
+      local_action: wait_for
+      args:
+        host: '{{ ansible_ssh_host }}'
+        port: 22
+        delay: 0
+        timeout: 600
+        state: stopped
+      become: false
+      when: disable_selinux | changed
+    
+    - name: Waiting for server booting up
+      local_action: wait_for
+      args:
+        host: '{{ ansible_ssh_host }}'
+        port: 22
+        delay: 0
+        timeout: 600
+        state: started
+      become: false
+      when: disable_selinux | changed

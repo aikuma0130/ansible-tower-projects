@@ -1,0 +1,26 @@
+- name: Configure Apache httpd
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+
+  tasks:
+    - name: Configure httpd
+      copy:
+        src: httpd.conf
+        dest: /etc/httpd/conf/httpd.conf
+        owner: root
+        group: root
+        mode: 0644
+      register: httpd_conf
+      when: ansible_os_family == "RedHat"
+
+    - name: Restart Apache httpd service
+      service:
+        name: httpd
+        state: restarted
+      when:
+        - ansible_os_family == "RedHat"
+        - httpd_conf | changed

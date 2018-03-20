@@ -1,0 +1,76 @@
+- name: Install WordPress
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+    wordpress_installer_url: https://wordpress.org/wordpress-4.9.1.tar.gz
+    wordpress_installer_sha256sum: a94ae99cda7666bfd482b36f268ad240a3bde2a66724e1312dabf068a9555100
+    wp_db_name: wpdb
+    wp_db_user: wpuser
+    wp_db_password: hpinvent
+
+  tasks:
+    - name: Add group wordpress
+      group:
+        name: wordpress
+    
+    - name: Add user wordpress
+      user:
+        name: wordpress
+        group: wordpress
+    
+    - name: Download WordPress Installer Archive
+      get_url:
+        url: "{{ wordpress_installer_url }}"
+        dest: ~/wordpress.tar.gz
+        sha256sum: "{{ wordpress_installer_sha256sum }}"
+    
+    - name: Extract WordPress Installer Archive
+      unarchive:
+        src: ~/wordpress.tar.gz
+        dest: /var/www/html
+        remote_src: yes
+    
+    - name: Create database for WordPress
+      mysql_db:
+        name: "{{ wp_db_name }}"
+        state: present
+    
+    - name: Create database user for WordPress
+      mysql_user:
+        name: "{{ wp_db_user }}"
+        password: "{{ wp_db_password }}"
+        priv: "{{ wp_db_name }}.*:ALL"
+        host: localhost
+        state: present
+    
+    - name: Fetch random salts for WordPress config
+      shell: curl https://api.wordpress.org/secret-key/1.1/salt/ | tee ~/salt-secret-key
+      args:
+        creates: ~/salt-secret-key
+      register: wp_salt
+    
+    - name: Copy WordPress config file
+      template:
+        src: wp-config.php.j2
+        dest: /var/www/html/wordpress/wp-config.php
+        owner: wordpress
+        group: wordpress
+        mode: 0644
+      when: wp_salt | changed
+    
+    - name: WordPress root directory is owned by apache
+      file:
+        path: /var/www/html/
+        state: directory
+        owner: wordpress
+        group: wordpress
+        recurse: yes
+    
+    - name: Restart Apache httpd
+      service:
+        name: httpd
+        state: restarted
+      when: ansible_os_family == "RedHat"

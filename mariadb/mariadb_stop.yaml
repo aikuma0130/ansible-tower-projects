@@ -1,0 +1,15 @@
+- name: Stop MariaDB Server
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+
+  tasks:
+    - name: Stop MariaDB server
+      service:
+        name: mariadb
+        state: stopped
+      when:
+        - ansible_os_family == "RedHat"

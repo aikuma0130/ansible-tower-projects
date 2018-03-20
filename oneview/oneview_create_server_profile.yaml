@@ -1,0 +1,23 @@
+- name: Create Server Profile OneView w/ Synergy
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  environment:
+
+  vars:
+    oneview_config: "/usr/local/etc/oneview/oneview_config.json"
+    ansible_python_interpreter: "/usr/local/bin/python"
+    synergy_profile_name: "RHEL_Ansible_Test"
+    synergy_profile_template_name: "RHEL_Ansible_Test_Template"
+    synergy_hardware_name: "SynergyFrame01, bay 4"
+
+  tasks:
+    - name: Ensure that the Deployment Server is present
+      oneview_server_profile:
+        config: "{{ oneview_config }}"
+        state: present
+        data:
+          name: "{{ synergy_profile_name }}"
+          serverHardwareName: "{{ synergy_hardware_name }}"
+          serverProfileTemplateName: "{{ synergy_profile_template_name }}"

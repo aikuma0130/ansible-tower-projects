@@ -1,0 +1,42 @@
+- name: Register host w/ Inventory of Tower
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  environment:
+
+  vars:
+    oneview_config: "/usr/local/etc/oneview/oneview_config.json"
+    ansible_python_interpreter: "/usr/local/bin/python"
+    synergy_profile_name: "RHEL_Ansible_Test"
+    inventory_name: "Synergy Nodes Inventory"
+    tower_username: admin
+    tower_password: hpinvent
+    tower_host: 192.168.100.150
+
+  tasks:
+    - name: Gather facts about the Server Profile
+      oneview_server_profile_facts:
+        config: "{{ oneview_config }}"
+        name: "{{ synergy_profile_name }}"
+      register: server_profile_results
+
+    - name: Set ip address of deployed Server to fact
+      set_fact:
+        ip_address_of_deployed_server: "{{ server_profile_results.ansible_facts.server_profiles[0].osDeploymentSettings.osCustomAttributes | selectattr('name','equalto','ManagementNIC1.ipaddress')| map(attribute='value')| first }}"
+
+    - name: Set domain name of deployed Server to fact
+      set_fact:
+        domain_name_of_deployed_server: "{{ server_profile_results.ansible_facts.server_profiles[0].osDeploymentSettings.osCustomAttributes | selectattr('name','equalto','DomainName')| map(attribute='value')| first | splitext | first }}"
+
+    - name: Register hosts deployed OneView w/ Synergy
+      tower_host:
+        name: "{{ domain_name_of_deployed_server }}"
+        inventory: "{{ inventory_name }}"
+        variables: "{'ansible_ssh_host':{{ ip_address_of_deployed_server }}}"
+        state: present
+        tower_host: "{{ tower_host }}"
+        tower_username: "{{ tower_username }}"
+        tower_password: "{{ tower_password }}"
+      vars:
+        ansible_python_interpreter: "/usr/bin/python"

@@ -1,0 +1,71 @@
+- name: OS Bootstrapping OneView w/ Synergy
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  environment:
+
+  vars:
+    oneview_config: "/usr/local/etc/oneview/oneview_config.json"
+    ansible_python_interpreter: "/usr/local/bin/python"
+    synergy_profile_name: "RHEL_Ansible_Test"
+    synergy_profile_template_name: "RHEL_Ansible_Test_Template"
+    synergy_hardware_name: "SynergyFrame01, bay 4"
+    inventory_name: "Synergy Nodes Inventory"
+    tower_username: admin
+    tower_password: hpinvent
+    tower_host: 192.168.100.150
+
+  tasks:
+    - name: Ensure that the Deployment Server is present
+      oneview_server_profile:
+        config: "{{ oneview_config }}"
+        state: present
+        data:
+          name: "{{ synergy_profile_name }}"
+          serverHardwareName: "{{ synergy_hardware_name }}"
+          serverProfileTemplateName: "{{ synergy_profile_template_name }}"
+
+    - name: Power-On the server
+      oneview_server_hardware:
+        config: "{{ oneview_config }}"
+        state: power_state_set
+        data:
+          name : "{{ synergy_hardware_name }}"
+          powerStateData:
+            powerState: "On"
+            powerControl: "MomentaryPress"
+
+    - name: Gather facts about the Server Profile
+      oneview_server_profile_facts:
+        config: "{{ oneview_config }}"
+        name: "{{ synergy_profile_name }}"
+      register: server_profile_results
+
+    - name: Set ip address of deployed Server to fact
+      set_fact:
+        ip_address_of_deployed_server: "{{ server_profile_results.ansible_facts.server_profiles[0].osDeploymentSettings.osCustomAttributes | selectattr('name','equalto','ManagementNIC1.ipaddress')| map(attribute='value')| first }}"
+
+    - name: Set domain name of deployed Server to fact
+      set_fact:
+        domain_name_of_deployed_server: "{{ server_profile_results.ansible_facts.server_profiles[0].osDeploymentSettings.osCustomAttributes | selectattr('name','equalto','DomainName')| map(attribute='value')| first | splitext | first }}"
+
+    - name: Register hosts deployed OneView w/ Synergy
+      tower_host:
+        name: "{{ domain_name_of_deployed_server }}"
+        inventory: "{{ inventory_name }}"
+        variables: "{'ansible_ssh_host':{{ ip_address_of_deployed_server }}}"
+        state: present
+        tower_host: "{{ tower_host }}"
+        tower_username: "{{ tower_username }}"
+        tower_password: "{{ tower_password }}"
+      vars:
+        ansible_python_interpreter: "/usr/bin/python"
+
+    - name: Wait for server booting up
+      wait_for:
+        host: "{{ ip_address_of_deployed_server }}"
+        port: 22
+        delay: 0
+        timeout: 900
+        state: started

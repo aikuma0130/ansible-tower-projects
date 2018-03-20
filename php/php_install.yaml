@@ -1,0 +1,26 @@
+- name: Install PHP
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+
+  tasks:
+    - name: Install php
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - php
+        - php-mysql
+      when: ansible_os_family == "RedHat"
+
+    - name: Configure php
+      copy:
+        src: php.ini
+        dest: /etc/php.ini
+        owner: root
+        group: root
+        mode: 0644
+      when: ansible_os_family == "RedHat"

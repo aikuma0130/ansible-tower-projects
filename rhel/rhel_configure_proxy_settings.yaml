@@ -1,0 +1,37 @@
+- name: Configure Proxy Settings
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+    proxy_host: 192.168.100.253
+    proxy_port: 8080
+    no_proxy: 192.168.*,10.*,*.local,*.net
+
+  tasks:
+    - name: Ensure that proxy for yum is configured
+      lineinfile:
+        path: /etc/yum.conf
+        line: "proxy=http://{{ proxy_host }}:{{ proxy_port }}"
+
+    - name: Ensure that proxy host for rhsm is configured
+      lineinfile:
+        path: /etc/rhsm/rhsm.conf
+        regexp: '^proxy_hostname ='
+        line: "proxy_hostname = {{ proxy_host }}"
+
+    - name: Ensure that proxy_port for rhsm is configured
+      lineinfile:
+        path: /etc/rhsm/rhsm.conf
+        regexp: '^proxy_port ='
+        line: "proxy_port = {{ proxy_port }}"
+
+    - name: Ensure that proxy environment is configured
+      blockinfile:
+        path: /etc/environment
+        block: |
+          http_proxy="http://{{ proxy_host }}:{{ proxy_port }}/"
+          https_proxy="http://{{ proxy_host }}:{{ proxy_port }}/"
+          ftp_proxy="http://{{ proxy_host }}:{{ proxy_port }}/"
+          no_proxy="{{ no_proxy }}"

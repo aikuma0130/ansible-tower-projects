@@ -1,0 +1,15 @@
+- name: Register RHEL Subscription
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+
+  tasks:
+    - name: Ensure that subscription is registered
+      redhat_subscription:
+        state: present
+        username: "{{ rhel_subscription_username }}"
+        password: "{{ rhel_subscription_password }}"
+        autosubscribe: true

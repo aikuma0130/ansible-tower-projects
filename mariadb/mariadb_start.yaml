@@ -1,0 +1,15 @@
+- name: Start MariaDB Server
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+
+  tasks:
+    - name: Start MariaDB server
+      service:
+        name: mariadb
+        state: started
+      when:
+        - ansible_os_family == "RedHat"

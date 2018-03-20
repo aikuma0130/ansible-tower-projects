@@ -1,0 +1,33 @@
+- name: Install MariaDB Server
+  hosts: all
+  become: yes
+
+  environment:
+
+  vars:
+
+  tasks:
+    - name: Install MariaDB Server
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - mariadb-server
+        - MySQL-python
+      when: ansible_os_family == "RedHat"
+
+    - name: Configure mariadb
+      copy:
+        src: my.cnf
+        dest: /etc/my.cnf
+        owner: root
+        group: root
+        mode: 0644
+      when: ansible_os_family == "RedHat"
+
+    - name: Start MariaDB server
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+      when: ansible_os_family == "RedHat"
